@@ -3,28 +3,29 @@
 # ============================================================
 
 # --- Build stage ---
-FROM oven/bun:1-debian AS builder
+FROM debian:bookworm-slim AS builder
 
 WORKDIR /app
 
 # Install build dependencies
-# ca-certificates 解决 cargo 访问 crates.io 的 SSL 问题
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git curl bash python3 make g++ pkg-config libssl-dev cargo ca-certificates \
+    curl bash python3 make g++ pkg-config libssl-dev cargo ca-certificates \
     && rm -rf /var/lib/apt/lists/* && apt-get clean
 
-COPY . /app
-WORKDIR /app/native
+# Install Bun
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.bun/bin:$PATH"
 
-# Patch: 启用 pdfium-binaries feature，Cargo 自动下载预编译 PDFium
+# Copy source (repo root IS the source, not a subdirectory)
+COPY . /app
+
+# Build Rust native tools (PDF extraction, clip server)
+# pdfium-binaries feature auto-downloads PDFium
+WORKDIR /app/native
 RUN sed -i 's/pdfium-render = "0.9"/pdfium-render = { version = "0.9", features = ["pdfium-binaries"] }/' /app/native/Cargo.toml \
     || echo "Cargo.toml already patched"
-
-# Build Rust native tools
 ENV RUST_LOG=info PDFIUM_BUNDLE=0
-RUN cargo build --release 2>&1 | tail -20
-
-# Copy artifacts
+RUN cargo build --release 2>&1 | tail -10
 RUN cp /app/native/target/release/llm-wiki-native /tmp/llm-wiki-native \
     2>/dev/null || true
 RUN PDFIUM_SO=$(find /root/.cargo -name "libpdfium.so" 2>/dev/null | head -1) && \
@@ -32,8 +33,7 @@ RUN PDFIUM_SO=$(find /root/.cargo -name "libpdfium.so" 2>/dev/null | head -1) &&
 
 # Build Bun CLI
 WORKDIR /app
-RUN bun install && \
-    bun build --compile cli/index.ts --outfile /tmp/llm-wiki
+RUN bun install && bun build --compile cli/index.ts --outfile /tmp/llm-wiki
 
 # --- Production stage ---
 FROM debian:bookworm-slim
