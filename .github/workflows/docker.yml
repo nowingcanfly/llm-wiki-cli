@@ -16,9 +16,8 @@ jobs:
     steps:
       - name: Checkout source code
         run: |
-          git clone --depth 1 https://github.com/huanghaozi/llm_wiki_cli.git /tmp/llm_wiki_cli
-          cp /tmp/llm_wiki_cli/* /github/workspace/ 2>/dev/null || true
-          cp -r /tmp/llm_wiki_cli/. /github/workspace/
+          git clone --depth 1 https://github.com/huanghaozi/llm_wiki_cli.git source
+          ls source/
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -42,7 +41,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: /github/workspace
+          context: source
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
