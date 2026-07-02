@@ -1,5 +1,5 @@
 # ============================================================
-# llm-wiki-cli — Docker build (CLI only, native tools optional)
+# llm-wiki-cli - Docker build (CLI only)
 # ============================================================
 
 # --- Build stage ---
@@ -25,15 +25,17 @@ LABEL maintainer="LLM Wiki CLI"
 
 RUN apt-get update && apt-get install -y --no-install-recommends     bash ca-certificates curl wget less ncurses-base tzdata     libsqlite3-0 libglib2.0-0     && rm -rf /var/lib/apt/lists/* && apt-get clean
 
-RUN groupadd -g 1000 llmwiki &&     useradd -u 1000 -g llmwiki -h /wiki -s /bin/bash -m llmwiki
+# Create user BEFORE creating dirs that reference it
+RUN groupadd -g 1000 llmwiki     && useradd -u 1000 -g llmwiki -s /bin/bash -r -M llmwiki
+
+# Create data dirs
+RUN mkdir -p /wiki /root/.llm-wiki-cli && chown llmwiki:llmwiki /wiki /root/.llm-wiki-cli
 
 WORKDIR /wiki
 
 COPY --from=builder /tmp/llm-wiki /usr/local/bin/llm-wiki
 
 RUN chmod +x /usr/local/bin/llm-wiki
-
-RUN mkdir -p /wiki /root/.llm-wiki-cli &&     chown llmwiki:llmwiki /wiki /root/.llm-wiki-cli
 
 ENV LLM_WIKI_CONFIG_DIR=/root/.llm-wiki-cli
 ENV LLM_WIKI_DATA_DIR=/wiki
