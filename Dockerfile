@@ -9,7 +9,7 @@ WORKDIR /app
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl bash python3 make g++ pkg-config libssl-dev cargo ca-certificates \
+    curl bash python3 make g++ unzip g++ pkg-config libssl-dev cargo ca-certificates \
     && rm -rf /var/lib/apt/lists/* && apt-get clean
 
 # Install Bun
