@@ -1,17 +1,16 @@
 # ============================================================
-# llm-wiki-cli - Docker build (CLI only)
+# llm-wiki-cli - Docker build
 # ============================================================
 
-# --- Build stage ---
-FROM debian:bookworm-slim AS builder
+# Use official Bun image (avoids manual download from GitHub releases)
+FROM oven/bun:1 AS builder
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends     curl bash python3 make g++ pkg-config libssl-dev ca-certificates unzip git     && rm -rf /var/lib/apt/lists/* && apt-get clean
-
-# Install Bun
-RUN curl -fsSL https://bun.sh/install | bash
-ENV PATH="/root/.bun/bin:$PATH"
+# Install build deps (git, rust, etc.)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git python3 make g++ pkg-config libssl-dev ca-certificates \
+    && rm -rf /var/lib/apt/lists/* && apt-get clean
 
 COPY . /app
 
@@ -23,10 +22,14 @@ FROM debian:bookworm-slim
 
 LABEL maintainer="LLM Wiki CLI"
 
-RUN apt-get update && apt-get install -y --no-install-recommends     bash ca-certificates curl wget less ncurses-base tzdata     libsqlite3-0 libglib2.0-0     && rm -rf /var/lib/apt/lists/* && apt-get clean
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash ca-certificates curl wget less ncurses-base tzdata \
+    libsqlite3-0 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/* && apt-get clean
 
-# Create user BEFORE creating dirs that reference it
-RUN groupadd -g 1000 llmwiki     && useradd -u 1000 -g llmwiki -s /bin/bash -r -M llmwiki
+# Create user before chown
+RUN groupadd -g 1000 llmwiki \
+    && useradd -u 1000 -g llmwiki -s /bin/bash -r -M llmwiki
 
 # Create data dirs
 RUN mkdir -p /wiki /root/.llm-wiki-cli && chown llmwiki:llmwiki /wiki /root/.llm-wiki-cli
