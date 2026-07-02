@@ -3,7 +3,7 @@
 # ============================================================
 
 # --- Build stage ---
-FROM oven/bun:1-bookworm AS builder
+FROM oven/bun:1-debian AS builder
 
 WORKDIR /app
 
